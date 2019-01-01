@@ -9,7 +9,9 @@
 /* Enum declarariom */
 enum powerstatus
 {
- Highhigh,Lowlow,Normal
+ Highhigh,
+ Lowlow,
+ Normal         
   
 };
 
