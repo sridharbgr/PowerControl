@@ -11,8 +11,8 @@ enum powerstatus
 {
  Highhigh,
  Lowlow,
- Normal         
-  
+ Normal,
+ Endoflist,
 };
 
 enum powerstatus status_voltage =Normal;
@@ -37,8 +37,10 @@ enum powerstatus status_voltage =Normal;
 /* Declare Global variable */
 static int Ctrl_Switch =HIGH;  // to control current status at startup
 uint32_t calc_time;
+static uint32_t start_cutoff,stop_cutoff,final_cutoff;
 int mVperAmp = 100; // use 100 for 20A Module and 66 for 30A Module
 int Ctrlbit;
+static int cut_off;
 double Voltage = 0;
 double Volatge_manipulation = 0;
 double VRMS = 0;
@@ -46,7 +48,8 @@ double AmpsRMS = 0;
 //double voltage_in;
 static int status_current=2;
 long int voltage_in;
-static double Cycle_Time;
+static double Cycle_Time,wait;
+static int check_var;
 
  // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
@@ -66,19 +69,14 @@ void setup(){
  pinMode(LCD_D7,OUTPUT);
  
  digitalWrite(RELAY_CTRL,LOW);
-
-
-
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
-  // Print a message to the LCD.
-  //lcd.print("hello, world!");
 }
 /*********************************************************************/
 
 /*    put your main code here, to run repeatedly      */
 void loop()
-{  
+{
  Voltage = Current_Read_Func();
  Volatge_manipulation = Voltage_Read_Func();
  VRMS = (Voltage/2.0) *0.707;  //root 2 is 0.707
@@ -88,10 +86,6 @@ void loop()
  if(AmpsRMS >MAXCURRENT)
    {
     status_current=0;
-   }
-   else if(AmpsRMS <MINCURRENT )
-   {
-    status_current=2;
    }
    else
    {
@@ -127,22 +121,54 @@ void loop()
      if((status_current == 0) ||(status_current == 1) )
          {
             Ctrl_Switch=LOW; 
-            Serial.println('A');
          }
-         Serial.println("ALL");
       digitalWrite(RELAY_CTRL,HIGH);
-      
+      for(wait=0;wait<=8000;wait++)
+      {
+         Serial.println(wait);
+      }
+
+       start_cutoff = millis();
+       //calc_time = start_time;  
    }
    else if ((status_voltage != Highhigh) && (status_voltage != Lowlow))
    {
-      Serial.println("bye");
-      Ctrl_Switch=HIGH;
-      digitalWrite(RELAY_CTRL,LOW);
+     // Serial.println("bye");
+     stop_cutoff=millis();
+     final_cutoff =stop_cutoff-start_cutoff;
+     if((final_cutoff>10)&&(final_cutoff<13000))
+       {
+          cut_off++;
+       }
+     else
+      {
+         cut_off=0;
+      }
+      if((cut_off <= 1)&&  (check_var <4))
+       {
+          check_var++;
+         digitalWrite(RELAY_CTRL,LOW);
+       }
     }
-Serial.println(status_current);
-//Serial.println(Cycle_Time);
-//Serial.println(RELAY_CTRL);
+    
+    
+Serial.print("cut_off==");
 
+Serial.print(cut_off);
+//Serial.println("wait");
+
+Serial.println("stop_cutoff");
+Serial.println(stop_cutoff);
+Serial.println("start_cutoff");
+Serial.println(start_cutoff);
+Serial.println("final_cutoff");
+Serial.println(final_cutoff);
+
+
+//Serial.println("RELAY_CTRL");
+//Serial.println(RELAY_CTRL);
+Serial.println("check_var");
+Serial.println(check_var);
 /*         Print a message to the LCD          */
 if(voltage_in >150){
 lcd.clear();
@@ -169,17 +195,7 @@ lcd.setCursor(0, 0);
 lcd.clear();
 lcd.setCursor(0, 0);
  lcd.print("Low Power mode");
-
+}
  /*        END LCD display           */
 }
-}
-
 /******      Main loop function ends       *************************/
-
-
-
-
-
-
-
-
